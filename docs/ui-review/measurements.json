@@ -1,0 +1,884 @@
+{
+  "checks": [
+    {
+      "scenario": "burst-live",
+      "result": {
+        "columns": [
+          {
+            "anchor": {
+              "key": "demo-orbit:demo-40",
+              "offset": 0
+            },
+            "bottom": 4560,
+            "count": 28,
+            "height": 518,
+            "id": "demo-inspiration",
+            "top": 0
+          },
+          {
+            "anchor": {
+              "key": "demo-studio:demo-30",
+              "offset": -138.09375
+            },
+            "bottom": 1,
+            "count": 12,
+            "height": 473,
+            "id": "demo-chat",
+            "top": 1915
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-39",
+              "offset": 0
+            },
+            "bottom": 3027,
+            "count": 19,
+            "height": 473,
+            "id": "demo-search",
+            "top": 0
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-39",
+              "offset": 0
+            },
+            "bottom": 1227,
+            "count": 9,
+            "height": 473,
+            "id": "demo-mentions",
+            "top": 0
+          }
+        ],
+        "overflow": false,
+        "paused": "false",
+        "viewport": [
+          390,
+          844
+        ]
+      }
+    },
+    {
+      "scenario": "paused-resize",
+      "before": {
+        "columns": [
+          {
+            "anchor": {
+              "key": "demo-orbit:demo-36",
+              "offset": -68.71875
+            },
+            "bottom": 2930,
+            "count": 28,
+            "height": 495,
+            "id": "demo-inspiration",
+            "top": 475
+          },
+          {
+            "anchor": {
+              "key": "demo-studio:demo-30",
+              "offset": -8.1875
+            },
+            "bottom": 0,
+            "count": 12,
+            "height": 450,
+            "id": "demo-chat",
+            "top": 1350
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-39",
+              "offset": 0
+            },
+            "bottom": 2333,
+            "count": 19,
+            "height": 450,
+            "id": "demo-search",
+            "top": 0
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-39",
+              "offset": 0
+            },
+            "bottom": 994,
+            "count": 9,
+            "height": 450,
+            "id": "demo-mentions",
+            "top": 0
+          }
+        ],
+        "overflow": false,
+        "paused": "true",
+        "viewport": [
+          700,
+          800
+        ]
+      },
+      "after": {
+        "columns": [
+          {
+            "anchor": {
+              "key": "demo-orbit:demo-36",
+              "offset": -68.9375
+            },
+            "bottom": 3519,
+            "count": 28,
+            "height": 495,
+            "id": "demo-inspiration",
+            "top": 552
+          },
+          {
+            "anchor": {
+              "key": "demo-studio:demo-30",
+              "offset": -8.3125
+            },
+            "bottom": -0.5,
+            "count": 12,
+            "height": 450,
+            "id": "demo-chat",
+            "top": 1452.5
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-39",
+              "offset": 0
+            },
+            "bottom": 2794,
+            "count": 19,
+            "height": 450,
+            "id": "demo-search",
+            "top": 0
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-39",
+              "offset": 0
+            },
+            "bottom": 1224,
+            "count": 9,
+            "height": 450,
+            "id": "demo-mentions",
+            "top": 0
+          }
+        ],
+        "overflow": false,
+        "paused": "true",
+        "viewport": [
+          500,
+          800
+        ]
+      }
+    },
+    {
+      "scenario": "paused-burst",
+      "result": {
+        "columns": [
+          {
+            "anchor": {
+              "key": "demo-orbit:demo-36",
+              "offset": -68.9375
+            },
+            "bottom": 3519,
+            "count": 28,
+            "height": 495,
+            "id": "demo-inspiration",
+            "top": 552
+          },
+          {
+            "anchor": {
+              "key": "demo-studio:demo-30",
+              "offset": -8.3125
+            },
+            "bottom": -0.5,
+            "count": 12,
+            "height": 450,
+            "id": "demo-chat",
+            "top": 1452.5
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-39",
+              "offset": 0
+            },
+            "bottom": 2794,
+            "count": 19,
+            "height": 450,
+            "id": "demo-search",
+            "top": 0
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-39",
+              "offset": 0
+            },
+            "bottom": 1224,
+            "count": 9,
+            "height": 450,
+            "id": "demo-mentions",
+            "top": 0
+          }
+        ],
+        "overflow": false,
+        "paused": "true",
+        "viewport": [
+          500,
+          800
+        ]
+      }
+    },
+    {
+      "scenario": "resume",
+      "result": {
+        "columns": [
+          {
+            "anchor": {
+              "key": "demo-orbit:demo-72",
+              "offset": 0
+            },
+            "bottom": 7559,
+            "count": 50,
+            "height": 495,
+            "id": "demo-inspiration",
+            "top": 0
+          },
+          {
+            "anchor": {
+              "key": "demo-studio:demo-62",
+              "offset": -8.3125
+            },
+            "bottom": 0,
+            "count": 20,
+            "height": 450,
+            "id": "demo-chat",
+            "top": 2674
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-71",
+              "offset": 0
+            },
+            "bottom": 5461,
+            "count": 35,
+            "height": 450,
+            "id": "demo-search",
+            "top": 0
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-71",
+              "offset": 0
+            },
+            "bottom": 2694,
+            "count": 17,
+            "height": 450,
+            "id": "demo-mentions",
+            "top": 0
+          }
+        ],
+        "overflow": false,
+        "paused": "false",
+        "viewport": [
+          500,
+          800
+        ]
+      }
+    },
+    {
+      "scenario": "keyboard-reorder-paused",
+      "before": {
+        "columns": [
+          {
+            "anchor": {
+              "key": "demo-orbit:demo-125",
+              "offset": -101.625
+            },
+            "bottom": 3676,
+            "count": 28,
+            "height": 455,
+            "id": "demo-inspiration",
+            "top": 435
+          },
+          {
+            "anchor": {
+              "key": "demo-studio:demo-118",
+              "offset": -79.84375
+            },
+            "bottom": 0,
+            "count": 12,
+            "height": 455,
+            "id": "demo-chat",
+            "top": 1652
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-127",
+              "offset": 0
+            },
+            "bottom": 2789,
+            "count": 19,
+            "height": 455,
+            "id": "demo-search",
+            "top": 0
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-127",
+              "offset": 0
+            },
+            "bottom": 1219,
+            "count": 9,
+            "height": 455,
+            "id": "demo-mentions",
+            "top": 0
+          }
+        ],
+        "overflow": false,
+        "paused": "true",
+        "viewport": [
+          1280,
+          720
+        ]
+      },
+      "after": {
+        "columns": [
+          {
+            "anchor": {
+              "key": "demo-studio:demo-118",
+              "offset": -79.84375
+            },
+            "bottom": 0,
+            "count": 12,
+            "height": 455,
+            "id": "demo-chat",
+            "top": 1652
+          },
+          {
+            "anchor": {
+              "key": "demo-orbit:demo-125",
+              "offset": -101.625
+            },
+            "bottom": 3676,
+            "count": 28,
+            "height": 455,
+            "id": "demo-inspiration",
+            "top": 435
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-127",
+              "offset": 0
+            },
+            "bottom": 2789,
+            "count": 19,
+            "height": 455,
+            "id": "demo-search",
+            "top": 0
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-127",
+              "offset": 0
+            },
+            "bottom": 1219,
+            "count": 9,
+            "height": 455,
+            "id": "demo-mentions",
+            "top": 0
+          }
+        ],
+        "overflow": false,
+        "paused": "true",
+        "viewport": [
+          1280,
+          720
+        ]
+      }
+    },
+    {
+      "scenario": "reorder-cancel",
+      "result": {
+        "columns": [
+          {
+            "anchor": {
+              "key": "demo-studio:demo-118",
+              "offset": -79.84375
+            },
+            "bottom": 0,
+            "count": 12,
+            "height": 455,
+            "id": "demo-chat",
+            "top": 1652
+          },
+          {
+            "anchor": {
+              "key": "demo-orbit:demo-125",
+              "offset": -101.625
+            },
+            "bottom": 3676,
+            "count": 28,
+            "height": 455,
+            "id": "demo-inspiration",
+            "top": 435
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-127",
+              "offset": 0
+            },
+            "bottom": 2789,
+            "count": 19,
+            "height": 455,
+            "id": "demo-search",
+            "top": 0
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-127",
+              "offset": 0
+            },
+            "bottom": 1219,
+            "count": 9,
+            "height": 455,
+            "id": "demo-mentions",
+            "top": 0
+          }
+        ],
+        "overflow": false,
+        "paused": "true",
+        "viewport": [
+          1280,
+          720
+        ]
+      }
+    },
+    {
+      "scenario": "pointer-reorder-paused",
+      "result": {
+        "columns": [
+          {
+            "anchor": {
+              "key": "demo-studio:demo-118",
+              "offset": -79.84375
+            },
+            "bottom": 0,
+            "count": 12,
+            "height": 455,
+            "id": "demo-chat",
+            "top": 1652
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-127",
+              "offset": 0
+            },
+            "bottom": 2789,
+            "count": 19,
+            "height": 455,
+            "id": "demo-search",
+            "top": 0
+          },
+          {
+            "anchor": {
+              "key": "demo-orbit:demo-125",
+              "offset": -101.625
+            },
+            "bottom": 3676,
+            "count": 28,
+            "height": 455,
+            "id": "demo-inspiration",
+            "top": 435
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-127",
+              "offset": 0
+            },
+            "bottom": 1219,
+            "count": 9,
+            "height": 455,
+            "id": "demo-mentions",
+            "top": 0
+          }
+        ],
+        "overflow": false,
+        "paused": "true",
+        "viewport": [
+          1280,
+          720
+        ]
+      }
+    },
+    {
+      "scenario": "reorder-reload",
+      "result": {
+        "columns": [
+          {
+            "anchor": {
+              "key": "demo-studio:demo-118",
+              "offset": -79.84375
+            },
+            "bottom": 0,
+            "count": 12,
+            "height": 455,
+            "id": "demo-chat",
+            "top": 1652
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-127",
+              "offset": 0
+            },
+            "bottom": 2789,
+            "count": 19,
+            "height": 455,
+            "id": "demo-search",
+            "top": 0
+          },
+          {
+            "anchor": {
+              "key": "demo-orbit:demo-128",
+              "offset": 0
+            },
+            "bottom": 4111,
+            "count": 28,
+            "height": 455,
+            "id": "demo-inspiration",
+            "top": 0
+          },
+          {
+            "anchor": {
+              "key": "demo-field:demo-127",
+              "offset": 0
+            },
+            "bottom": 1219,
+            "count": 9,
+            "height": 455,
+            "id": "demo-mentions",
+            "top": 0
+          }
+        ],
+        "overflow": false,
+        "paused": "false",
+        "viewport": [
+          1280,
+          720
+        ]
+      }
+    },
+    {
+      "scenario": "draft-burst-snapshot",
+      "before": {
+        "end": 34,
+        "focused": true,
+        "start": 33,
+        "text": "Invented draft for the workshop.\nKeep this second line."
+      },
+      "after": {
+        "end": 34,
+        "focused": true,
+        "start": 33,
+        "text": "Invented draft for the workshop.\nKeep this second line."
+      }
+    },
+    {
+      "scenario": "draft-paused-reorder-resize",
+      "result": {
+        "end": 34,
+        "focused": false,
+        "start": 33,
+        "text": "Invented draft for the workshop.\nKeep this second line."
+      }
+    },
+    {
+      "scenario": "draft-resume",
+      "result": {
+        "end": 34,
+        "focused": false,
+        "start": 33,
+        "text": "Invented draft for the workshop.\nKeep this second line."
+      }
+    },
+    {
+      "scenario": "grid-18-compact",
+      "result": {
+        "columns": [
+          {
+            "anchor": {
+              "key": "demo-field:demo-8",
+              "offset": 0
+            },
+            "bottom": 375,
+            "count": 4,
+            "height": 282,
+            "id": "demo-inspiration",
+            "top": 0
+          },
+          {
+            "anchor": {
+              "key": "demo-studio:demo-long-1",
+              "offset": -828.6931304931641
+            },
+            "bottom": 0.181884765625,
+            "count": 5,
+            "height": 282,
+            "id": "demo-chat",
+            "top": 1426.818115234375
+          },
+          {
+            "anchor": {
+              "key": "demo-studio:demo-long-1",
+              "offset": 0
+            },
+            "bottom": 1374,
+            "count": 4,
+            "height": 282,
+            "id": "demo-search",
+            "top": 0
+          },
+          {
+            "anchor": {
+              "key": "demo-studio:demo-7",
+              "offset": 0
+            },
+            "bottom": 0,
+            "count": 1,
+            "height": 282,
+            "id": "demo-mentions",
+            "top": 0
+          }
+        ],
+        "overflow": false,
+        "paused": "false",
+        "viewport": [
+          1440,
+          900
+        ]
+      }
+    },
+    {
+      "scenario": "focus-18-compact",
+      "result": {
+        "columns": [
+          {
+            "anchor": {
+              "key": "demo-field:demo-8",
+              "offset": 0
+            },
+            "bottom": 0,
+            "count": 4,
+            "height": 636,
+            "id": "demo-inspiration",
+            "top": 0
+          },
+          {
+            "anchor": {
+              "key": "demo-studio:demo-long-1",
+              "offset": -474.6022644042969
+            },
+            "bottom": 0.272705078125,
+            "count": 5,
+            "height": 636,
+            "id": "demo-chat",
+            "top": 1072.727294921875
+          },
+          {
+            "anchor": {
+              "key": "demo-studio:demo-long-1",
+              "offset": 0
+            },
+            "bottom": 991,
+            "count": 4,
+            "height": 636,
+            "id": "demo-search",
+            "top": 0
+          },
+          {
+            "anchor": {
+              "key": "demo-studio:demo-7",
+              "offset": 0
+            },
+            "bottom": 0,
+            "count": 1,
+            "height": 636,
+            "id": "demo-mentions",
+            "top": 0
+          }
+        ],
+        "overflow": false,
+        "paused": "false",
+        "viewport": [
+          1440,
+          900
+        ]
+      }
+    },
+    {
+      "scenario": "narrow-300-long",
+      "result": {
+        "bodyOverflow": false,
+        "clippedMetadata": 0,
+        "feedHeight": 636,
+        "following": true,
+        "headerHeight": 75,
+        "overlappingTitles": 0,
+        "viewport": [
+          1440,
+          900
+        ]
+      }
+    }
+  ],
+  "contrastMatrix": [
+    {
+      "theme": "light",
+      "accent": "sage",
+      "min": 5.38763833203196,
+      "fail": []
+    },
+    {
+      "theme": "light",
+      "accent": "ocean",
+      "min": 5.025558150627389,
+      "fail": []
+    },
+    {
+      "theme": "light",
+      "accent": "rose",
+      "min": 5.1831818151800775,
+      "fail": []
+    },
+    {
+      "theme": "light",
+      "accent": "amber",
+      "min": 4.8562783959820655,
+      "fail": []
+    },
+    {
+      "theme": "dark",
+      "accent": "sage",
+      "min": 5.593271565338858,
+      "fail": []
+    },
+    {
+      "theme": "dark",
+      "accent": "ocean",
+      "min": 5.687839481955059,
+      "fail": []
+    },
+    {
+      "theme": "dark",
+      "accent": "rose",
+      "min": 5.931491089085871,
+      "fail": []
+    },
+    {
+      "theme": "dark",
+      "accent": "amber",
+      "min": 5.452163796983419,
+      "fail": []
+    }
+  ],
+  "layoutMatrix": [
+    {
+      "clippedMetadata": 0,
+      "feedHeight": 520,
+      "following": true,
+      "headerHeight": 117,
+      "overlappingTitles": 0,
+      "pageOverflow": false,
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "clippedMetadata": 0,
+      "feedHeight": 497,
+      "following": true,
+      "headerHeight": 117,
+      "overlappingTitles": 0,
+      "pageOverflow": false,
+      "viewport": [
+        500,
+        800
+      ]
+    },
+    {
+      "clippedMetadata": 0,
+      "feedHeight": 497,
+      "following": true,
+      "headerHeight": 117,
+      "overlappingTitles": 0,
+      "pageOverflow": false,
+      "viewport": [
+        700,
+        800
+      ]
+    },
+    {
+      "clippedMetadata": 0,
+      "feedHeight": 536,
+      "following": true,
+      "headerHeight": 75,
+      "overlappingTitles": 0,
+      "pageOverflow": false,
+      "viewport": [
+        768,
+        800
+      ]
+    },
+    {
+      "clippedMetadata": 0,
+      "feedHeight": 336,
+      "following": true,
+      "headerHeight": 75,
+      "overlappingTitles": 0,
+      "pageOverflow": false,
+      "viewport": [
+        1024,
+        600
+      ]
+    },
+    {
+      "clippedMetadata": 0,
+      "feedHeight": 456,
+      "following": true,
+      "headerHeight": 75,
+      "overlappingTitles": 0,
+      "pageOverflow": false,
+      "viewport": [
+        1280,
+        720
+      ]
+    },
+    {
+      "clippedMetadata": 0,
+      "feedHeight": 636,
+      "following": true,
+      "headerHeight": 75,
+      "overlappingTitles": 0,
+      "pageOverflow": false,
+      "viewport": [
+        1440,
+        900
+      ]
+    }
+  ],
+  "typeMatrix": [
+    {
+      "size": "12",
+      "minMetadata": 12
+    },
+    {
+      "size": "14",
+      "minMetadata": 12
+    },
+    {
+      "size": "16",
+      "minMetadata": 13
+    },
+    {
+      "size": "18",
+      "minMetadata": 15
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>tgdeck · Your Telegram, in perspective</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#workspace">Skip to workspace</a>
+  <aside class="rail" aria-label="Workspace tools">
+    <a class="brand" href="/" aria-label="tgdeck home">t<span>g</span></a>
+    <button class="rail-button add-button" id="add" aria-label="Load demo board" title="Load demo board">+</button>
+    <div class="rail-divider"></div>
+    <nav id="column-nav" aria-label="Jump to column"></nav>
+    <div class="rail-bottom">
+      <span class="connection-dot" id="connection-dot" title="Connecting"></span>
+      <span class="rail-caption">LOCAL</span>
+    </div>
+  </aside>
+  <div class="shell">
+    <header class="header">
+      <div class="workspace-title"><div><span class="eyebrow">YOUR WORKSPACE</span><h1>The overview<span class="title-dot">.</span></h1></div><span class="demo-badge" id="mode-badge">Local workspace</span></div>
+      <div class="header-actions">
+        <button class="button subtle reading-button" id="easy-reading" title="Use 16 px text and comfortable spacing" hidden>Easy reading</button>
+        <button class="button subtle" id="display-settings">Display & layouts</button>
+        <button class="button primary" id="choose-chat" hidden>+ Add column</button>
+        <button class="button subtle" id="clear" hidden>Clear board</button>
+        <button class="button primary" id="load" hidden>+ Load demo board</button>
+      </div>
+    </header>
+    <div class="workspace-meta"><div><span class="tiny-square"></span><span id="column-count">A little space for everything</span></div><div class="reading-controls"><span id="connection" role="status">Connecting…</span><button class="button subtle" id="pause" aria-pressed="false" hidden>Pause to read</button></div></div>
+    <main id="workspace" tabindex="-1">
+      <section class="login-panel" id="login-panel" aria-labelledby="login-title" hidden></section>
+      <section class="chat-picker" id="chat-picker" aria-labelledby="picker-title" hidden></section>
+      <section class="empty-state" id="empty" aria-labelledby="empty-title" hidden>
+        <div class="board-illustration" aria-hidden="true">
+          <div class="mini-column left"><i></i><b></b><b></b><em></em><b></b></div>
+          <div class="mini-column middle"><i></i><b></b><em></em><b></b><b></b></div>
+          <div class="mini-column right"><i></i><em></em><b></b><b></b><b></b></div>
+          <span class="illustration-plus">+</span>
+        </div>
+        <span class="eyebrow green">LESS SWITCHING. MORE SEEING.</span>
+        <h2 id="empty-title">Your Telegram,<br>in perspective.</h2>
+        <p>Conversations, channels, and the things you follow.<br>Give them a place, side by side.</p>
+        <button class="button primary large" id="explore">Explore the demo <span aria-hidden="true">↗</span></button>
+        <span class="demo-note"><span aria-hidden="true">◇</span> Fictional feeds. No login. All yours to explore.</span>
+        <div class="feature-row"><span><b>01</b> Follow channels</span><span><b>02</b> Find your focus</span><span><b>03</b> Stay in the loop</span></div>
+      </section>
+      <div id="board" class="board" aria-label="Feed columns" hidden></div>
+    </main>
+    <footer><span><b>tgdeck</b><span class="footer-divider">/</span>A calmer view of your conversations.</span><span class="milestone">LOCAL WORKSPACE <span class="footer-divider">/</span> Unofficial. Not affiliated with Telegram.</span></footer>
+  </div>
+  <div id="notice" class="notice" role="alert" hidden></div>
+</body>
+</html>
