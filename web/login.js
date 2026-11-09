@@ -31,6 +31,7 @@ export function errorText(failure) {
     replyUnavailable: 'That message can no longer be replied to. Choose another message or cancel the reply.',
     replyRequired: 'Reply to a message to choose its forum topic.',
     sendUncertain: 'Delivery could not be confirmed. Check the conversation before composing another send. This request will not be sent again.',
+    sendRejected: 'Telegram did not accept this message. Nothing was sent.',
     textTooLong: 'Keep your message within 4096 characters.',
   };
   return Object.hasOwn(messages, error.error) ? messages[error.error] : messages.unavailable;

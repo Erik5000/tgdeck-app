@@ -80,7 +80,7 @@ export type ServerEvent =
   | { type: 'auth'; auth: AuthState }
   | { type: 'settings'; settings: Settings }
   | { type: 'columnError'; columnId: string; code: 'unavailable' | 'rateLimited'; retryAfter?: number };
-export type ApiError = { error: 'unauthorized' | 'forbidden' | 'notFound' | 'invalidRequest' | 'unavailable' | 'invalidState' | 'invalidCredentials' | 'invalidPhone' | 'invalidCode' | 'expiredCode' | 'invalidPassword' | 'invalidEmail' | 'rateLimited' | 'columnLimit' | 'sendForbidden' | 'paidMessage' | 'replyUnavailable' | 'replyRequired' | 'sendUncertain' | 'textTooLong'; retryAfter?: number };
+export type ApiError = { error: 'unauthorized' | 'forbidden' | 'notFound' | 'invalidRequest' | 'unavailable' | 'invalidState' | 'invalidCredentials' | 'invalidPhone' | 'invalidCode' | 'expiredCode' | 'invalidPassword' | 'invalidEmail' | 'rateLimited' | 'columnLimit' | 'sendForbidden' | 'paidMessage' | 'replyUnavailable' | 'replyRequired' | 'sendUncertain' | 'sendRejected' | 'textTooLong'; retryAfter?: number };
 
 // Implemented: state/events, demo board, setup/auth, chat search and chat columns
 // (POST /api/columns {chatId}, DELETE /api/columns/:id), and POST /api/send.

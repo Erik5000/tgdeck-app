@@ -1,12 +1,11 @@
 # tgdeck
 
-A local Telegram board inspired by TweetDeck: channels, conversations, searches
-and mentions, side by side.
+A local Telegram board inspired by TweetDeck: chats and channels, side by side.
 
 **Status: Telegram login, live columns, sending/replies and display customization.** Add chats and channels
 side by side, remove columns, and restore the board after restarting. The fictional
 demo works alongside the local Telegram setup/login flow. Media support
-is still on the roadmap. This is an early public preview under active development.
+is still on the roadmap. This is an early version: live columns show text only.
 
 Unofficial. Not affiliated with Telegram.
 
@@ -15,7 +14,7 @@ Unofficial. Not affiliated with Telegram.
 Build a standalone `tgdeck.app` with a native window, Dock icon, and Spotlight
 launching. Node and TDLib are bundled, and your existing private account storage
 is reused. See [Mac build and installation](docs/macos.md). Local builds are
-ad-hoc signed; public binary distribution still needs signing and notarization.
+ad-hoc signed. tgdeck has no App Store app and no ready-made Mac download.
 
 ## Try the demo
 
@@ -230,8 +229,7 @@ staged changes and outgoing history yourself, especially before making the repo
 public. Hooks can be bypassed; the CI scan has no access to your private word
 list. The guard does not rewrite existing history or scan commit metadata.
 Before release, review every published commit's author/committer details and
-messages as well as its files. Existing history must be cleaned before the
-repository is made public; cleaning only the latest files is insufficient.
+messages as well as its files.
 
 ## Roadmap
 
@@ -242,7 +240,7 @@ repository is made public; cleaning only the latest files is insufficient.
 | M2 | Real column CRUD, folders, search, mentions, drag, widths, pagination | Chat add/remove, drag ordering, widths and saved layouts implemented; remaining features planned |
 | M3 | Explicit send and reply, with write-permission checks | Plain text and replies implemented |
 | M4 | Photos, audio/video, files, stickers and cache limits | Planned |
-| M5 | Settings, install guide and v0.1.0 | Display settings and local Mac app builds implemented; signed/notarized releases planned |
+| M5 | Settings, install guide and v0.1.0 | Display settings, install steps and the v0.1.0 source release implemented |
 
 The demo columns demonstrate the layout and event flow; they do not
 implement Telegram folders/search/mentions. Full text formatting arrives with

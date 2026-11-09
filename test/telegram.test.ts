@@ -142,7 +142,7 @@ test('one selected chat loads history and live updates without marking messages 
   await fake.update({ _: 'updateDeleteMessages', chat_id: demoChat.id, message_ids: [4], is_permanent: true, from_cache: false });
   assert.equal(source.snapshot().feeds[`live-${demoChat.id}`]!.length, 3);
   assert.deepEqual(JSON.parse(await readFile(join(directory, 'columns.json'), 'utf8')), { chatIds: [String(demoChat.id)] });
-  assert.ok(!fake.requests.some(request => ['viewMessages', 'openChat', 'sendMessage'].includes(request._)));
+  assert.ok(!fake.requests.some(request => ['viewMessages', 'readAllChatMentions', 'readAllChatReactions', 'sendMessage'].includes(request._)));
 });
 
 test('converter excludes secret chats and displays untrusted message text literally', () => {
@@ -255,7 +255,7 @@ test('multiple columns add concurrently, receive isolated updates and can be rem
   await source.removeColumn(ids[1]!);
   assert.deepEqual(source.snapshot().columns, []);
   assert.deepEqual(await readPrivateJson(directory, 'columns.json'), { chatIds: [] });
-  assert.ok(!fake.requests.some(request => ['viewMessages', 'openChat', 'sendMessage'].includes(request._)));
+  assert.ok(!fake.requests.some(request => ['viewMessages', 'readAllChatMentions', 'readAllChatReactions', 'sendMessage'].includes(request._)));
 });
 
 for (const legacy of [true, false]) {
@@ -309,6 +309,182 @@ test('history loading preserves edits and deletions while existing columns keep 
   assert.deepEqual(source.snapshot().feeds[`live-${secondChat.id}`]!.map(message => [message.id, message.text]),
     [['1', 'Keep'], ['3', 'Edited during loading'], ['4', 'Arrived during loading']]);
   assert.equal(source.snapshot().feeds[`live-${demoChat.id}`]!.at(-1)!.text, 'Existing column still live');
+});
+
+const feedIds = (source: TelegramSource) => source.snapshot().feeds[`live-${demoChat.id}`]!.map(message => message.id);
+const lastMessage = (message?: Td.message): Td.updateChatLastMessage => ({ _: 'updateChatLastMessage', chat_id: demoChat.id, last_message: message, positions: [] });
+const historyReads = (fake: FakeTelegram) => fake.requests.filter(request => request._ === 'getChatHistory' && request.chat_id === demoChat.id && request.from_message_id === 0).length;
+const settle = () => new Promise(resolve => setTimeout(resolve, 20));
+function holdHistory(fake: FakeTelegram): () => void {
+  let release!: () => void;
+  fake.holdMethod = 'getChatHistory';
+  fake.hold = new Promise(resolve => { release = resolve; });
+  return () => { release(); fake.hold = undefined; };
+}
+
+test('restored and added columns open their chats before they read history', async t => {
+  const { source, fake, directory } = await sourceFixture(t);
+  await source.setup(credentials);
+  await writePrivateJson(directory, 'columns.json', { chatIds: [String(secondChat.id)] });
+  await fake.auth({ _: 'authorizationStateReady' });
+  await eventually(() => source.snapshot().columns.length === 1);
+  await source.addChat(String(demoChat.id));
+  for (const chat of [secondChat, demoChat]) {
+    const order = fake.requests.filter(request => request.chat_id === chat.id).map(request => request._);
+    assert.ok(order.includes('openChat'), `Expected ${chat.title} to be opened`);
+    assert.ok(order.indexOf('openChat') < order.indexOf('getChatHistory'), 'Expected the chat to open before its history is read');
+  }
+});
+
+test('removing a column closes its chat, and a failed close does not block the removal', async t => {
+  const { source, fake } = await sourceFixture(t);
+  await source.setup(credentials);
+  await fake.auth({ _: 'authorizationStateReady' });
+  await source.addChat(String(demoChat.id));
+  fake.failureMethod = 'closeChat';
+  fake.failure = { code: 400, message: 'Synthetic close failure' };
+  await source.removeColumn(`live-${demoChat.id}`);
+  assert.deepEqual(source.snapshot().columns, []);
+  assert.ok(fake.requests.some(request => request._ === 'closeChat' && request.chat_id === demoChat.id));
+});
+
+test('a failed column load closes the chat that it opened', async t => {
+  const { source, fake } = await sourceFixture(t);
+  await source.setup(credentials);
+  await fake.auth({ _: 'authorizationStateReady' });
+  fake.failureMethod = 'getChatHistory';
+  fake.failure = { code: 500, message: 'Synthetic failure' };
+  await assert.rejects(source.addChat(String(demoChat.id)));
+  assert.ok(fake.requests.some(request => request._ === 'closeChat' && request.chat_id === demoChat.id));
+});
+
+test('applying a layout closes the chats that it drops', async t => {
+  const { source, fake } = await sourceFixture(t);
+  await source.setup(credentials);
+  await fake.auth({ _: 'authorizationStateReady' });
+  await source.addChat(String(demoChat.id));
+  await source.saveLayout({ name: 'Synthetic single' });
+  await source.addChat(String(secondChat.id));
+  await source.applyLayout(source.snapshot().layouts![0]!.id);
+  assert.deepEqual(source.snapshot().columns.map(column => column.id), [`live-${demoChat.id}`]);
+  assert.ok(fake.requests.some(request => request._ === 'closeChat' && request.chat_id === secondChat.id));
+  assert.ok(!fake.requests.some(request => request._ === 'closeChat' && request.chat_id === demoChat.id));
+});
+
+test('a newer last message without its updates loads the missing history', async t => {
+  const { source, fake } = await sourceFixture(t);
+  await source.setup(credentials);
+  await fake.auth({ _: 'authorizationStateReady' });
+  await source.addChat(String(demoChat.id));
+  const events: ServerEvent[] = [];
+  source.subscribe(event => events.push(event));
+  fake.history = [fakeMessage(60, 'Posted during the gap'), fakeMessage(59, 'Also posted during the gap')];
+  await fake.update(lastMessage(fakeMessage(60)));
+  await eventually(() => feedIds(source).at(-1) === '60');
+  assert.deepEqual(feedIds(source), ['1', '2', '3', '59', '60']);
+  assert.ok(events.some(event => event.type === 'snapshot' && event.data.feeds[`live-${demoChat.id}`]!.some(message => message.id === '60')));
+});
+
+test('an unknown last message reads the history again', async t => {
+  const { source, fake } = await sourceFixture(t);
+  await source.setup(credentials);
+  await fake.auth({ _: 'authorizationStateReady' });
+  await source.addChat(String(demoChat.id));
+  const reads = historyReads(fake);
+  fake.history = [fakeMessage(60, 'Arrived with no update')];
+  await fake.update(lastMessage());
+  await eventually(() => feedIds(source).at(-1) === '60');
+  await settle();
+  assert.equal(historyReads(fake), reads + 1);
+});
+
+test('a last message that the column has or that is older reads no history', async t => {
+  const { source, fake } = await sourceFixture(t);
+  await source.setup(credentials);
+  await fake.auth({ _: 'authorizationStateReady' });
+  fake.history = [fakeMessage(13), fakeMessage(12), fakeMessage(11)];
+  await source.addChat(String(demoChat.id));
+  const reads = historyReads(fake);
+  await fake.update({ _: 'updateNewMessage', message: fakeMessage(14) });
+  await fake.update(lastMessage(fakeMessage(14)));
+  await fake.update(lastMessage(fakeMessage(12)));
+  await fake.update(lastMessage(fakeMessage(5)));
+  await settle();
+  assert.equal(historyReads(fake), reads);
+});
+
+test('gap reads run one at a time', async t => {
+  const { source, fake } = await sourceFixture(t);
+  await source.setup(credentials);
+  await fake.auth({ _: 'authorizationStateReady' });
+  await source.addChat(String(demoChat.id));
+  const reads = historyReads(fake);
+  const release = holdHistory(fake);
+  await fake.update(lastMessage(fakeMessage(60)));
+  await eventually(() => historyReads(fake) === reads + 1);
+  await fake.update(lastMessage(fakeMessage(61)));
+  await fake.update(lastMessage(fakeMessage(62)));
+  await fake.update(lastMessage(fakeMessage(63)));
+  await settle();
+  assert.equal(historyReads(fake), reads + 1);
+  fake.history = [fakeMessage(63), fakeMessage(62), fakeMessage(61), fakeMessage(60)];
+  release();
+  await eventually(() => feedIds(source).at(-1) === '63');
+  await settle();
+  assert.equal(historyReads(fake), reads + 2);
+});
+
+test('a gap read keeps the edits and deletions that arrive during the read', async t => {
+  const { source, fake } = await sourceFixture(t);
+  await source.setup(credentials);
+  await fake.auth({ _: 'authorizationStateReady' });
+  await source.addChat(String(demoChat.id));
+  const reads = historyReads(fake);
+  fake.history = [fakeMessage(60, 'Old text'), fakeMessage(59, 'Will be deleted')];
+  const release = holdHistory(fake);
+  await fake.update(lastMessage(fakeMessage(60)));
+  await eventually(() => historyReads(fake) === reads + 1);
+  await fake.update({ _: 'updateMessageContent', chat_id: demoChat.id, message_id: 60, new_content: fakeMessage(60, 'Edited during the read').content });
+  await fake.update({ _: 'updateDeleteMessages', chat_id: demoChat.id, message_ids: [59], is_permanent: true, from_cache: false });
+  await fake.update({ _: 'updateNewMessage', message: fakeMessage(61, 'Arrived during the read') });
+  release();
+  await eventually(() => feedIds(source).includes('60'));
+  assert.deepEqual(source.snapshot().feeds[`live-${demoChat.id}`]!.slice(-2).map(message => [message.id, message.text]),
+    [['60', 'Edited during the read'], ['61', 'Arrived during the read']]);
+  assert.ok(!feedIds(source).includes('59'));
+});
+
+test('a failed gap read keeps the column and reports the failure', async t => {
+  const { source, fake } = await sourceFixture(t);
+  await source.setup(credentials);
+  await fake.auth({ _: 'authorizationStateReady' });
+  await source.addChat(String(demoChat.id));
+  const before = source.snapshot().feeds[`live-${demoChat.id}`];
+  const events: ServerEvent[] = [];
+  source.subscribe(event => events.push(event));
+  fake.failureMethod = 'getChatHistory';
+  fake.failure = { code: 500, message: 'Synthetic failure' };
+  await fake.update(lastMessage(fakeMessage(60)));
+  await eventually(() => events.some(event => event.type === 'columnError' && event.columnId === `live-${demoChat.id}`));
+  assert.deepEqual(source.snapshot().feeds[`live-${demoChat.id}`], before);
+});
+
+test('a gap read that outlives the session stays silent', async t => {
+  const { source, fake } = await sourceFixture(t);
+  await source.setup(credentials);
+  await fake.auth({ _: 'authorizationStateReady' });
+  await source.addChat(String(demoChat.id));
+  const reads = historyReads(fake);
+  const events: ServerEvent[] = [];
+  source.subscribe(event => events.push(event));
+  const release = holdHistory(fake);
+  await fake.update(lastMessage(fakeMessage(60)));
+  await eventually(() => historyReads(fake) === reads + 1);
+  await fake.auth({ _: 'authorizationStateLoggingOut' });
+  release();
+  await settle();
+  assert.ok(!events.some(event => event.type === 'columnError'));
+  assert.deepEqual(source.snapshot().columns, []);
 });
 
 test('failed column writes preserve the existing board and saved layout', { skip: process.platform === 'win32' || process.getuid?.() === 0 }, async t => {

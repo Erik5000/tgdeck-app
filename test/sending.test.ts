@@ -191,6 +191,95 @@ test('flood waits preserve the draft request and prevent another network send', 
   assert.equal(fake.requests.filter(query => query._ === 'sendMessage').length, 1);
 });
 
+// The shared secondChat is a read-only channel, so these tests need another chat that can send.
+async function addWritableChat(source: TelegramSource, fake: FakeTelegram) {
+  const chat = { ...demoChat, id: -100003, title: 'Synthetic Workshop' } as Td.chat;
+  fake.chats.set(chat.id, chat);
+  await source.addChat(String(chat.id));
+  return String(chat.id);
+}
+const longWait = { code: 429, message: 'Too Many Requests: retry after 3600' };
+
+test('a rate limit on a send stops only that chat', async t => {
+  const { source, fake } = await fixture(t);
+  const other = await addWritableChat(source, fake);
+  fake.failureMethod = 'sendMessage';
+  fake.failure = longWait;
+  await assert.rejects(source.send(input()), { code: 'rateLimited', retryAfter: 3600 });
+  fake.failure = undefined;
+  await source.send(input({ chatId: other }));
+  assert.equal(String(fake.sent[0]!.chat_id), other);
+  await assert.rejects(source.send(input()), { code: 'rateLimited' });
+  assert.equal(fake.sent.length, 1);
+});
+
+test('a failed send update with a wait stops only its chat', async t => {
+  const { source, fake } = await fixture(t);
+  const other = await addWritableChat(source, fake);
+  await source.send(input());
+  const pending = fake.sent[0]!;
+  const error = { _: 'error', ...longWait } as Td.error;
+  const failed = { ...pending, sending_state: { _: 'messageSendingStateFailed', error, retry_after: 3600 } } as Td.message;
+  await fake.update({ _: 'updateMessageSendFailed', message: failed, old_message_id: pending.id, error });
+  await source.send(input({ chatId: other }));
+  assert.equal(fake.sent.length, 2);
+  await assert.rejects(source.send(input()), { code: 'rateLimited' });
+  assert.equal(fake.sent.length, 2);
+});
+
+test('a rate limit on the reply lookup stops only that chat', async t => {
+  const { source, fake } = await fixture(t);
+  const other = await addWritableChat(source, fake);
+  fake.failureMethod = 'getMessage';
+  fake.failure = longWait;
+  await assert.rejects(source.send(input({ replyTo: { chatId: String(demoChat.id), messageId: '3' } })), { code: 'rateLimited' });
+  fake.failure = undefined;
+  await source.send(input({ chatId: other }));
+  assert.equal(fake.sent.length, 1);
+  await assert.rejects(source.send(input()), { code: 'rateLimited' });
+  assert.equal(fake.sent.length, 1);
+});
+
+test('a Telegram rate limit leaves local board changes available', async t => {
+  const { source, fake } = await fixture(t);
+  const other = await addWritableChat(source, fake);
+  fake.failure = longWait;
+  await assert.rejects(source.listChats(''), { code: 'rateLimited' });
+  fake.failure = undefined;
+  await source.updateColumn(`live-${other}`, { width: 'wide' });
+  await source.saveLayout({ name: 'Synthetic layout' });
+  await source.deleteLayout(source.snapshot().layouts![0]!.id);
+  await source.removeColumn(`live-${other}`);
+  assert.equal(source.snapshot().columns.length, 1);
+  await assert.rejects(source.listChats(''), { code: 'rateLimited' });
+});
+
+test('a send that Telegram refuses reports that nothing was sent and allows a retry', async t => {
+  const { source, fake } = await fixture(t);
+  const raw = 'Synthetic local refusal';
+  fake.failureMethod = 'sendMessage';
+  fake.failure = { code: 400, message: raw };
+  const value = input();
+  const failure = await source.send(value).catch((error: Error & { code: string }) => error);
+  assert.equal((failure as { code?: string }).code, 'sendRejected');
+  assert.ok(!(failure as Error).message.includes(raw));
+  assert.ok(!JSON.stringify(source.snapshot()).includes(raw));
+  fake.failure = undefined;
+  await source.send(value);
+  assert.equal(fake.sent.length, 1);
+});
+
+test('a send failure with no Telegram error code stays uncertain', async t => {
+  const { source, fake } = await fixture(t);
+  fake.failureMethod = 'sendMessage';
+  fake.failure = new Error('Synthetic lost client');
+  const value = input();
+  await assert.rejects(source.send(value), { code: 'sendUncertain' });
+  fake.failure = undefined;
+  await assert.rejects(source.send(value), { code: 'sendUncertain' });
+  assert.equal(fake.requests.filter(query => query._ === 'sendMessage').length, 1);
+});
+
 test('delivery succeeds by replacing the temporary message exactly once', async t => {
   const { source, fake, messages } = await fixture(t);
   const events: ServerEvent[] = [];

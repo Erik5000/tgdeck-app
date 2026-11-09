@@ -24,6 +24,8 @@ export class FakeTelegram {
   closed = false;
   history = [fakeMessage(3), fakeMessage(2), fakeMessage(1)];
   chats = new Map([[demoChat.id, demoChat], [secondChat.id, secondChat]]);
+  // By chat list: pages of chats that stay unknown until loadChats reaches them.
+  unloaded = new Map<string, Td.chat[][]>();
   histories = new Map([[secondChat.id, [fakeMessage(1, 'A different fictional feed.', secondChat.id)]]]);
   groups = new Map<number, Td.supergroup>([1, 2].map(id => [id, {
     _: 'supergroup', id, is_channel: id === 2, status: { _: 'chatMemberStatusMember' },
@@ -70,6 +72,12 @@ export class FakeTelegram {
           this.sent.push(message);
           await this.onSend?.(message);
           return message;
+        }
+        case 'loadChats': {
+          const page = this.unloaded.get((query.chat_list as { _: string })._)?.shift();
+          if (!page) throw { code: 404, message: 'Synthetic end of list' };
+          for (const chat of page) this.chats.set(chat.id, chat);
+          return { _: 'ok' };
         }
         case 'getChats': case 'searchChats': return { _: 'chats', chat_ids: [...this.chats.values()]
           .filter(chat => !query.query || chat.title.toLowerCase().includes(String(query.query).toLowerCase())).map(chat => chat.id) };

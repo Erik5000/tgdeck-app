@@ -40,6 +40,8 @@ const validChatId = (value: unknown): value is string => typeof value === 'strin
 const HISTORY_LIMIT = 50;
 const HISTORY_PAGES = 8;
 const CHAT_LIST_LIMIT = 50;
+const CHAT_LIST_PAGE_SIZE = 100;
+const CHAT_LIST_PAGES = 40;
 const SENDER_CACHE_LIMIT = 500;
 const MAX_AUTH_INPUT = 1024;
 const UNKNOWN_SENDER = 'Unknown sender';
@@ -102,6 +104,7 @@ export class TelegramSource implements Source {
   #preferences = defaultPreferences();
   #customized = false;
   #columnChanges: Promise<void> = Promise.resolve();
+  #queuedCatchUps = new Set<string>();
   #sendRequests = new Map<string, SendRequest>();
   #sendingChats = new Set<string>();
   #settledMessages = new Set<string>();
@@ -112,6 +115,9 @@ export class TelegramSource implements Source {
   #busy = false;
   #closed = false;
   #retryUntil = 0;
+  // Slow mode and send limits apply to one chat, so they must not stop the others.
+  #chatRetryUntil = new Map<string, number>();
+  #chatLists?: { client: TelegramClient; loaded: Promise<void> };
   #now: () => number;
   #log = createLogger();
 
@@ -172,8 +178,8 @@ export class TelegramSource implements Source {
     }
   }
 
-  #checkCooldown(): void {
-    const seconds = Math.ceil((this.#retryUntil - this.#now()) / 1000);
+  #checkCooldown(until = this.#retryUntil): void {
+    const seconds = Math.ceil((until - this.#now()) / 1000);
     if (seconds > 0) throw new OperationError('rateLimited', 429, seconds);
   }
 
@@ -181,6 +187,13 @@ export class TelegramSource implements Source {
     if (error instanceof OperationError) return error;
     const failure = telegramError(error);
     if (failure.retryAfter) this.#retryUntil = this.#now() + failure.retryAfter * 1000;
+    return failure;
+  }
+
+  #sendFailure(chatId: string, error: unknown): OperationError {
+    if (error instanceof OperationError) return error;
+    const failure = telegramError(error);
+    if (failure.retryAfter) this.#chatRetryUntil.set(chatId, this.#now() + failure.retryAfter * 1000);
     return failure;
   }
 
@@ -228,10 +241,15 @@ export class TelegramSource implements Source {
     finally { this.#busy = false; }
   }
 
-  #readyClient(): TelegramClient {
-    this.#checkCooldown();
+  /** For work that stays on this computer. A Telegram rate limit does not apply to it. */
+  #currentClient(): TelegramClient {
     if (!this.#client || this.#auth.state !== 'ready' || this.#closed) throw new OperationError('invalidState', 409);
     return this.#client;
+  }
+
+  #readyClient(): TelegramClient {
+    this.#checkCooldown();
+    return this.#currentClient();
   }
 
   async #refreshAccess(column: LiveColumn, client: TelegramClient, onlyLocal = true): Promise<void> {
@@ -266,6 +284,7 @@ export class TelegramSource implements Source {
 
   async #sendOnce(input: SendInput, request: SendRequest): Promise<void> {
     const client = this.#readyClient();
+    this.#checkCooldown(this.#chatRetryUntil.get(input.chatId) ?? 0);
     const column = this.#columns.get(input.chatId);
     if (!column?.visible) throw new OperationError('invalidState', 409);
     if (this.#sendingChats.has(input.chatId)) throw new OperationError('invalidState', 409);
@@ -282,7 +301,7 @@ export class TelegramSource implements Source {
           const properties = await client.invoke({ _: 'getMessageProperties', chat_id: Number(input.chatId), message_id: Number(input.replyTo.messageId) });
           if (target.chat_id !== Number(input.chatId) || target.sending_state || !properties.can_be_replied) throw new OperationError('replyUnavailable');
         } catch (error) {
-          const failure = this.#failure(error);
+          const failure = this.#sendFailure(input.chatId, error);
           if (failure.code === 'rateLimited') throw failure;
           throw new OperationError('replyUnavailable');
         }
@@ -300,10 +319,13 @@ export class TelegramSource implements Source {
             clear_draft: false, link_preview_options: { _: 'linkPreviewOptions', is_disabled: true } },
         });
       } catch (error) {
-        const failure = this.#failure(error);
-        if (failure.code === 'unavailable') throw new OperationError('sendUncertain', 503);
+        const failure = this.#sendFailure(input.chatId, error);
+        const code = (error as { code?: unknown } | null)?.code;
+        // A 4xx code means that TDLib did not accept the message, so nothing was sent.
+        const refused = typeof code === 'number' && code >= 400 && code < 500 && code !== 406;
+        if (failure.code === 'unavailable' && !refused) throw new OperationError('sendUncertain', 503);
         request.attempted = false;
-        throw failure;
+        throw failure.code === 'unavailable' ? new OperationError('sendRejected') : failure;
       }
       // A terminal update may arrive before the invoke promise resolves.
       if (!this.#settledMessages.has(`${message.chat_id}:${message.id}`)) await this.#receiveMessage(message, client);
@@ -332,7 +354,8 @@ export class TelegramSource implements Source {
   async listChats(query: string): Promise<Chat[]> {
     const client = this.#readyClient();
     try {
-      if (!query) {
+      if (query) await this.#loadChatLists(client);
+      else {
         // 404 means that TDLib has already loaded the whole main list.
         try { await client.invoke({ _: 'loadChats', chat_list: { _: 'chatListMain' }, limit: CHAT_LIST_LIMIT }); }
         catch (error) { if ((error as { code?: number }).code !== 404) throw error; }
@@ -344,6 +367,27 @@ export class TelegramSource implements Source {
         .map(async id => convertChat(await client.invoke({ _: 'getChat', chat_id: id }))));
       return chats.filter(chat => chat !== undefined);
     } catch (error) { throw this.#failure(error); }
+  }
+
+  /** searchChats reads only the chats that TDLib knows. Load both lists once, so that a search finds older chats. */
+  #loadChatLists(client: TelegramClient): Promise<void> {
+    if (this.#chatLists?.client !== client) this.#chatLists = { client, loaded: this.#readChatLists(client) };
+    return this.#chatLists.loaded;
+  }
+
+  async #readChatLists(client: TelegramClient): Promise<void> {
+    try {
+      for (const list of ['chatListMain', 'chatListArchive'] as const) {
+        for (let page = 0; page < CHAT_LIST_PAGES; page++) {
+          try { await client.invoke({ _: 'loadChats', chat_list: { _: list }, limit: CHAT_LIST_PAGE_SIZE }); }
+          catch (error) { if ((error as { code?: number }).code === 404) break; throw error; }
+        }
+      }
+    } catch (error) {
+      // The search still covers the known chats. The next search tries the load again.
+      this.#chatLists = undefined;
+      this.#failure(error);
+    }
   }
 
   #sender(message: Td.message, client: TelegramClient): Promise<Message['sender']> {
@@ -424,7 +468,7 @@ export class TelegramSource implements Source {
 
   async updateColumn(id: string, value: unknown): Promise<void> {
     await this.#changeColumns(async () => {
-      this.#readyClient();
+      this.#currentClient();
       const next = changeColumn(this.#preferences, this.snapshot().columns, id, value);
       await this.#persistBoard(this.#chatIds, next, true);
       this.#emit({ type: 'snapshot', data: this.snapshot() });
@@ -433,7 +477,7 @@ export class TelegramSource implements Source {
 
   async saveLayout(value: unknown): Promise<void> {
     await this.#changeColumns(async () => {
-      this.#readyClient();
+      this.#currentClient();
       await this.#persistBoard(this.#chatIds, saveLayout(this.#preferences, this.snapshot().columns, value), true);
       this.#emit({ type: 'snapshot', data: this.snapshot() });
     });
@@ -441,7 +485,7 @@ export class TelegramSource implements Source {
 
   async deleteLayout(id: string): Promise<void> {
     await this.#changeColumns(async () => {
-      this.#readyClient();
+      this.#currentClient();
       if (!this.#preferences.layouts.some(layout => layout.id === id)) throw new OperationError('notFound', 404);
       await this.#persistBoard(this.#chatIds, { ...this.#preferences, layouts: this.#preferences.layouts.filter(layout => layout.id !== id) }, true);
       this.#emit({ type: 'snapshot', data: this.snapshot() });
@@ -464,10 +508,10 @@ export class TelegramSource implements Source {
         if (this.#readyClient() !== client) throw new OperationError('invalidState', 409);
         await this.#persistBoard(chatIds, { ...this.#preferences, columns: layout.columns,
           settings: { ...this.#preferences.settings, layout: layout.layout } }, true);
-      } catch (error) { for (const chatId of added) this.#columns.delete(chatId); throw this.#failure(error); }
+      } catch (error) { for (const chatId of added) this.#dropColumn(chatId, client); throw this.#failure(error); }
       for (const [chatId, column] of this.#columns) {
         if (chatIds.includes(chatId)) column.visible = true;
-        else this.#columns.delete(chatId);
+        else this.#dropColumn(chatId, client);
       }
       this.#emit({ type: 'snapshot', data: this.snapshot() });
     });
@@ -488,7 +532,7 @@ export class TelegramSource implements Source {
         column.visible = true;
         this.#emit({ type: 'snapshot', data: this.snapshot() });
       } catch (error) {
-        this.#columns.delete(chatId);
+        this.#dropColumn(chatId, client);
         throw this.#failure(error);
       }
     });
@@ -496,16 +540,25 @@ export class TelegramSource implements Source {
 
   async removeColumn(id: string): Promise<void> {
     return this.#changeColumns(async () => {
-      this.#readyClient();
+      const client = this.#currentClient();
       const chatId = this.#chatIds.find(chatId => columnId(chatId) === id);
       if (!chatId) throw new OperationError('notFound', 404);
       const chatIds = this.#chatIds.filter(value => value !== chatId);
       // Persist before changing the board, so a failed write leaves it intact.
       await this.#persistBoard(chatIds);
       this.#chatIds = chatIds;
-      this.#columns.delete(chatId);
+      this.#dropColumn(chatId, client);
       this.#emit({ type: 'snapshot', data: this.snapshot() });
     });
+  }
+
+  #dropColumn(chatId: string, client: TelegramClient): void {
+    if (this.#columns.delete(chatId)) void this.#closeChat(chatId, client);
+  }
+
+  async #closeChat(chatId: string, client: TelegramClient): Promise<void> {
+    // The column is already gone, so a failed close must not fail the change.
+    try { await client.invoke({ _: 'closeChat', chat_id: Number(chatId) }); } catch { /* TDLib closes chats with the client. */ }
   }
 
   async #loadColumn(chatId: string, client: TelegramClient): Promise<LiveColumn> {
@@ -515,36 +568,68 @@ export class TelegramSource implements Source {
       if (!chat || chat.id !== chatId) throw new OperationError('invalidRequest');
       try { Object.assign(chat, await writeAccess(raw, client.invoke)); }
       catch { chat.sendRestriction = 'unavailable'; }
-      const loading: NonNullable<LiveColumn['loading']> = { edits: new Map(), deleted: new Set() };
-      const column: LiveColumn = { raw, chat, messages: [], visible: false, loading };
+      const column: LiveColumn = { raw, chat, messages: [], visible: false, loading: { edits: new Map(), deleted: new Set() } };
       this.#columns.set(chatId, column);
+      // TDLib gets supergroup and channel updates only for opened chats.
+      // Opening a chat sends no read receipt. Only viewMessages does that.
+      await client.invoke({ _: 'openChat', chat_id: Number(chatId) });
+      await this.#readHistory(column, client);
+      return column;
+    } catch (error) {
+      this.#dropColumn(chatId, client);
+      throw this.#failure(error);
+    }
+  }
+
+  async #readHistory(column: LiveColumn, client: TelegramClient): Promise<void> {
+    const loading: NonNullable<LiveColumn['loading']> = column.loading ?? { edits: new Map(), deleted: new Set() };
+    column.loading = loading;
+    const chatId = Number(column.chat.id);
+    try {
       // TDLib chooses the page size and often returns only a few local
       // messages first. Page backwards until the history limit is reached.
       const history: Td.message[] = [];
       const seen = new Set<number>();
       let cursor = 0;
       for (let page = 0; page < HISTORY_PAGES && history.length < HISTORY_LIMIT; page++) {
-        const batch = await client.invoke({ _: 'getChatHistory', chat_id: Number(chatId), from_message_id: cursor, offset: 0, limit: HISTORY_LIMIT, only_local: false });
+        const batch = await client.invoke({ _: 'getChatHistory', chat_id: chatId, from_message_id: cursor, offset: 0, limit: HISTORY_LIMIT, only_local: false });
         const fresh = batch.messages.filter((message): message is Td.message => message != null && !seen.has(message.id));
         if (!fresh.length) break;
         for (const message of fresh) { history.push(message); seen.add(message.id); }
         cursor = fresh.at(-1)!.id;
       }
       const messages = await Promise.all(history.slice(0, HISTORY_LIMIT)
-        .map(async raw => { const sender = await this.#sender(raw, client); return convertMessage(raw, chat, sender.name, sender.avatar); }));
-      if (this.#client !== client || this.#auth.state !== 'ready' || this.#closed) throw new OperationError('invalidState', 409);
-      // Preserve new messages, edits and deletions received during loading.
-      const live = column.messages;
-      column.messages = messages;
-      this.#merge(column, live);
+        .map(async raw => { const sender = await this.#sender(raw, client); return convertMessage(raw, column.chat, sender.name, sender.avatar); }));
+      if (this.#client !== client || this.#columns.get(column.chat.id) !== column || this.#auth.state !== 'ready' || this.#closed) throw new OperationError('invalidState', 409);
+      // Preserve new messages, edits and deletions received during the read.
+      this.#merge(column, messages);
       column.messages = column.messages.filter(message => !loading.deleted.has(message.id));
       for (const message of column.messages) Object.assign(message, loading.edits.get(message.id));
-      column.loading = undefined;
-      return column;
-    } catch (error) {
-      this.#columns.delete(chatId);
-      throw this.#failure(error);
-    }
+    } finally { column.loading = undefined; }
+  }
+
+  /** After a long gap, TDLib changes the last message but does not replay the missed messages. */
+  #catchUp(chatId: string, client: TelegramClient): void {
+    // A queued read has not started, so it also includes this change.
+    if (this.#queuedCatchUps.has(chatId)) return;
+    this.#queuedCatchUps.add(chatId);
+    this.#changeColumns(async () => {
+      this.#queuedCatchUps.delete(chatId);
+      const column = this.#columns.get(chatId);
+      if (!column || this.#client !== client) return;
+      try { await this.#readHistory(column, client); }
+      catch (error) {
+        if (this.#columns.get(chatId) === column && this.#client === client) this.#columnError(columnId(chatId), error);
+        return;
+      }
+      if (column.visible) this.#emit({ type: 'snapshot', data: this.snapshot() });
+    }).catch(() => { this.#log('source_failed'); });
+  }
+
+  #isNewerThanFeed(column: LiveColumn, message: Td.message): boolean {
+    if (column.messages.some(item => item.id === String(message.id))) return false;
+    const newest = column.messages.at(-1);
+    return !newest || message.date > newest.date || (message.date === newest.date && message.id > Number(newest.id));
   }
 
   async #restore(): Promise<void> {
@@ -625,7 +710,7 @@ export class TelegramSource implements Source {
       return;
     }
     if (update._ === 'updateNewMessage' || update._ === 'updateMessageSendSucceeded' || update._ === 'updateMessageSendFailed') {
-      if (update._ === 'updateMessageSendFailed') this.#failure(update.error);
+      if (update._ === 'updateMessageSendFailed') this.#sendFailure(String(update.message.chat_id), update.error);
       await this.#receiveMessage(update.message, client, 'old_message_id' in update ? update.old_message_id : undefined);
       return;
     }
@@ -649,7 +734,10 @@ export class TelegramSource implements Source {
     const column = chatId ? this.#columns.get(chatId) : undefined;
     if (!column || this.#auth.state !== 'ready') return;
     const id = columnId(column.chat.id);
-    if (update._ === 'updateMessageContent') {
+    if (update._ === 'updateChatLastMessage') {
+      // While the last message is unknown, TDLib can add messages with no updateNewMessage.
+      if (!update.last_message || this.#isNewerThanFeed(column, update.last_message)) this.#catchUp(column.chat.id, client);
+    } else if (update._ === 'updateMessageContent') {
       const messageId = String(update.message_id);
       const text = messageText(update.new_content);
       if (column.loading) column.loading.edits.set(messageId, { ...column.loading.edits.get(messageId), text });
