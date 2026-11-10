@@ -53,7 +53,3 @@ The local build is ad-hoc signed, suitable for local installation and testing.
 It is **not Developer ID signed or Apple notarized**. Before advertising a
 download for other Macs, produce and verify signed/notarized builds for each
 supported architecture. Do not tell users to disable Gatekeeper.
-
-Repository publication is a separate step: review all history, metadata, hosted
-issues/PRs, CI logs and release assets before making it public. A source release
-may document this local build without promising a notarized binary download.

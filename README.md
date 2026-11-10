@@ -118,9 +118,6 @@ comes into view, then clear after about 12 seconds. Resuming updates also marks
 new arrivals received while paused. Initial history and your own sends are not
 marked as new; none of these indicators sends Telegram read receipts.
 
-The [UI review and repeatable synthetic scenarios](docs/ui-review.md) include
-matching-viewport captures, measurements and the live/paused validation matrix.
-
 Drag a column by its header or **⠿** handle and drop it at the highlighted position.
 Hold near a board edge to scroll to columns offscreen. The order saves automatically.
 For keyboard control, focus the handle, press **Space** or **Enter**, choose a position
@@ -203,7 +200,6 @@ data. Never add personal names, contact details, usernames, real chat/message
 content, account identifiers, credentials, session files, personal machine paths
 or real-account captures. This also applies to issue/PR text, CI logs, packaged
 files and release assets. Contributor attribution uses the project name.
-See [AGENTS.md](AGENTS.md) for the working rules.
 
 `npm ci` / `npm install` installs repository-local hooks. Existing custom hook
 paths are preserved; installation stops and asks you to integrate both guards
@@ -228,14 +224,12 @@ These are detection rules, not a guarantee against every possible secret. Review
 staged changes and outgoing history yourself, especially before making the repo
 public. Hooks can be bypassed; the CI scan has no access to your private word
 list. The guard does not rewrite existing history or scan commit metadata.
-Before release, review every published commit's author/committer details and
-messages as well as its files.
 
 ## Roadmap
 
 | Milestone | Scope | Status |
 | --- | --- | --- |
-| M0 | Private repo, privacy guards, typed protocol, safe local server, live demo board | Implemented |
+| M0 | Privacy guards, typed protocol, safe local server, live demo board | Implemented |
 | M1 | API setup, TDLib login, one live text chat column | Implemented |
 | M2 | Real column CRUD, folders, search, mentions, drag, widths, pagination | Chat add/remove, drag ordering, widths and saved layouts implemented; remaining features planned |
 | M3 | Explicit send and reply, with write-permission checks | Plain text and replies implemented |
@@ -245,7 +239,7 @@ messages as well as its files.
 The demo columns demonstrate the layout and event flow; they do not
 implement Telegram folders/search/mentions. Full text formatting arrives with
 the real Telegram converter. All public screenshots and clips must use demo
-mode. Milestone posts are drafts; the owner decides when to publish them.
+mode.
 
 ## Project map
 
@@ -255,13 +249,10 @@ src/           Protocol, demo and Telegram sources, TDLib conversion, local
 web/           Plain JavaScript, HTML and CSS; no build step
 scripts/       Git privacy scanner and hook installation
 test/          Synthetic fixtures and temporary Git/server integration tests
-docs/          Approved design, milestone plans and milestone drafts
+docs/          Mac build guide
 ```
 
-The [design](docs/superpowers/specs/2026-10-02-tgdeck-design.md) describes the full
-target; the [M0 plan](docs/superpowers/plans/2026-10-05-m0-foundation.md) records the
-foundation. The [M1 plan](docs/superpowers/plans/2026-10-05-m1-login.md) describes
-login and the first live column. Auth, read and send capabilities are on
+Auth, read and send capabilities are on
 `TelegramSource`; files will be added with their working implementation.
 Node runs erasable TypeScript directly, and `tsc` checks both
 the server and browser JavaScript against `src/protocol.ts`.
