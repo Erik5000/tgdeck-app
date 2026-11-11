@@ -2,6 +2,8 @@
 
 A local Telegram board inspired by TweetDeck: chats and channels, side by side.
 
+![The tgdeck demo board: three chat and channel columns side by side. All data is invented.](docs/images/demo-board.jpg)
+
 **Status: Telegram login, live columns, sending/replies and display customization.** Add chats and channels
 side by side, remove columns, and restore the board after restarting. The fictional
 demo works alongside the local Telegram setup/login flow. Media support
